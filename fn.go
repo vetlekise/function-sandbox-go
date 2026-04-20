@@ -24,6 +24,11 @@ type Function struct {
 }
 
 // RunFunction runs the Function.
+//
+// 1. Gets the observed composite resource from the RunFunctionRequest.
+// 2. Reads the list of environment names from spec.environments of the composite resource.
+// 3. Creates one Kubernetes Namespace for each environment, named "<xr-name>-<env>", with managed-by and environment labels.
+// 4. Returns the desired Namespaces in a RunFunctionResponse.
 func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
 	f.log.Info("Running function", "tag", req.GetMeta().GetTag())
 
