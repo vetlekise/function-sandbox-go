@@ -30,26 +30,48 @@ func TestRunFunction(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"ResponseIsReturned": {
-			reason: "The Function should return a fatal result if no input was specified",
+		"NamespacesAreCreated": {
+			reason: "The Function should create one Namespace per environment in spec.environments",
 			args: args{
 				req: &fnv1.RunFunctionRequest{
 					Meta: &fnv1.RequestMeta{Tag: "hello"},
-					Input: resource.MustStructJSON(`{
-						"apiVersion": "template.fn.crossplane.io/v1beta1",
-						"kind": "Input",
-						"example": "Hello, world"
-					}`),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{
+                            "apiVersion": "example.crossplane.io/v1",
+                            "kind": "XR",
+                            "metadata": {"name": "example-xr"},
+                            "spec": {"environments": ["dev", "prod"]}
+                        }`),
+						},
+					},
 				},
 			},
 			want: want{
 				rsp: &fnv1.RunFunctionResponse{
 					Meta: &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1.Result{
-						{
-							Severity: fnv1.Severity_SEVERITY_NORMAL,
-							Message:  "I was run with input \"Hello, world\"!",
-							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+					Desired: &fnv1.State{
+						Resources: map[string]*fnv1.Resource{
+							"ns-dev": {
+								Resource: resource.MustStructJSON(`{
+                                "apiVersion": "v1",
+                                "kind": "Namespace",
+                                "metadata": {
+                                    "name": "example-xr-dev",
+                                    "labels": {"managed-by": "crossplane", "environment": "dev"}
+                                }
+                            }`),
+							},
+							"ns-prod": {
+								Resource: resource.MustStructJSON(`{
+                                "apiVersion": "v1",
+                                "kind": "Namespace",
+                                "metadata": {
+                                    "name": "example-xr-prod",
+                                    "labels": {"managed-by": "crossplane", "environment": "prod"}
+                                }
+                            }`),
+							},
 						},
 					},
 					Conditions: []*fnv1.Condition{
